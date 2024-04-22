@@ -1,0 +1,182 @@
+class ZCL_AMDP_MJE_JOURNAL definition
+  public
+  final
+  create public .
+
+public section.
+    interfaces IF_AMDP_MARKER_HDB.
+    class-methods getmjejournal for table function ZFI_TBF_MJE_JOURNAL.
+
+protected section.
+private section.
+ENDCLASS.
+
+
+
+CLASS ZCL_AMDP_MJE_JOURNAL IMPLEMENTATION.
+
+
+method getmjejournal
+  by database function for hdb language sqlscript
+  options read-only
+  using bkpf acdoca zfi_highrisk_gl  ZFI_REGION ZFI_MJE_PARAM usr02 SKA1   .
+
+
+
+*  Select all company codes assigned to the input region from ZFI_REGION table mapping
+    it_rbukts1 = select distinct bukrs, ZREGION from  ZFI_REGION where    mandt = :clnt;
+
+* Select distinct company codes from above
+    it_rbukts = select distinct bukrs, ZREGION from  :it_rbukts1;
+
+*  Determine the User type from table USR02 to determine what type of user posted each journal entry
+    lt_users =  select  BNAME,   USTYP,  CLASS from usr02
+     where mandt = :clnt and USTYP in ( select VAR_VALUE1  from ZFI_MJE_PARAM where VAR_NAME = 'USERTYPE');
+
+*  Get List of P&L Accounts from SKA1  TABLE  to Flag P&L Accounts
+    lt_ska1 =  select  distinct saknr  from SKA1 where mandt = :clnt and KTOPL = 'OCOA' and XBILK != 'X';
+
+*  Get list of TOCDES TO EXCLUDE
+    it_ZFI_MJE_PARAM = select distinct a.mandt, a.VAR_NAME, case  VAR_VALUE1  when null then '' else trim(VAR_VALUE1) end as tcode,
+                     case  VAR_VALUE2  when null then '' else trim(VAR_VALUE2) end as blart, concat(TRIM(VAR_VALUE1), TRIM(VAR_VALUE2) ) as tcode_blart   from ZFI_MJE_PARAM  a  where a.VAR_NAME = 'TCODEDT';
+
+*Main Table Fetch from acdoca and bkpf
+    it_Journal =  SELECT  a.mandt, rbukrs,  A.gjahr,  A.belnr,  docln,  B.rldnr, B.blart, bvorg, ausbk,
+               trim(replace_regexpr('([^[:ascii:]])' in a.bktxt with '' occurrence all )) as bktxt,
+               a.tcode,a.ppnam,a.cpudt, a.cputm,
+               A.budat,A.bldat,grpid,monat,A.usnam,a.XBLNR,
+               drcrk,poper,fiscyearper, PERIV, timestamp,augdt,auggj,racct,augbl,bttype,B.awtyp,B.bstat,
+               segment,vorgn,ktopl,buzei,bschl,umskz,koart,ukostl,lifnr,rcntr,rfarea,
+               trim(replace_regexpr('([^[:ascii:]])' in b.ZUONR with '' occurrence all )) as ZUONR,
+               trim(replace_regexpr('([^[:ascii:]])' in b.sgtxt with '' occurrence all )) as sgtxt,
+               rhcur, hsl, rkcur, ksl, kfsl, rwcur as rtcur, wsl as tsl
+       from         bkpf a
+       inner join   acdoca as b    on a.mandt = b.rclnt
+                                  and a.bukrs = b.rbukrs
+                                  and a.gjahr = b.gjahr
+                                  and a.belnr = b.belnr
+                                  and B.rldnr = :P_ledger
+                                  and b.poper  = :P_FiscalPeriod
+                                  and b.gjahr = :P_FiscalYear
+                                  and a.gjahr = :P_FiscalYear
+                                  and a.mandt = :clnt
+        inner join   :lt_users as c on  a.usnam = c.BNAME
+
+
+*        Filters for fiscal year, Period, Region that is entered during the AFO prompt by the end user
+
+       where a.gjahr = :P_FiscalYear and
+             b.gjahr = :P_FiscalYear and  b.poper  = :P_FiscalPeriod and B.rldnr = :P_ledger
+*              and a.bukrs in ( select distinct bukrs from  :it_rbukts)  -- Removing as the region filter is  removed
+*       Filters for bstat and other reference fields
+         and (  b.bstat =  ''  or   b.bstat =  'U' or b.bstat is null)
+         and    a.GLVOR       =  'RFBU'
+         and b.awtyp not in ( 'AIBU', 'AMBU', 'AMBU',  'AMDP', 'BKKEB', 'BKKSU', 'FEBEP', 'FKKSU', 'JVAM', 'TR-TM')
+
+*       If an document contains a value of 01 or 03 in the STGRD- Reversal Reason field it should be excluded from the MJE report.
+         and a.STGRD not in ( '01', '03' )
+
+*       Filters for core MJE filters: document status (bstat), business transaction (glvor), reference transaction (awtyp), and cross company (ausbk)
+         and    (a.ausbk = '' or trim(a.ausbk) = ''
+             or trim(a.ausbk)  is  null or a.ausbk  is  null)
+          and concat ( (case      when  a.tcode  is null  then 'X'
+                                   when trim(a.tcode)  = '' then 'X'
+                                   else trim(a.tcode) end),
+*       Combination of Tcode, doc types which are maintained in zfi_mje_param should be excluded
+                        (case   when a.blart is null then 'X'
+                                when trim(a.blart)  = '' then 'X'
+                                else trim(a.blart) end) ) not in ( select distinct tcode_blart from :it_ZFI_MJE_PARAM );
+
+
+
+* Flag Journal entrie documents that include a line item posted to a high-risk GL account defined in table
+   it_spcl_acct_docs1 = select distinct mandt, gjahr, rbukrs, belnr from  :it_Journal as a inner join zfi_highrisk_gl as b
+                             on a.racct = b.hkont;
+
+   it_spcl_acct_docs = select  mandt, gjahr, rbukrs, belnr, 'Y' as spl_gl from  :it_spcl_acct_docs1;
+
+
+* Aggregating the journal entry to sum the debits for future SAS99 flags
+   it_thresold_amt1 = select  mandt, gjahr, rbukrs, belnr,  abs(sum ( hsl )) as thr_hsl, abs(sum(ksl )) as thr_ksl,   to_decimal( sum ( hsl ), 16, 2)      as eo_hsl, to_decimal( sum ( tsl ), 16, 2)      as eo_tsl
+                     from  :it_Journal where drcrk = 'S'
+                     group by mandt, gjahr, rbukrs, belnr;
+
+* Filter journal entries on user defined threshold from the AFO against journal aggregated debit amounts
+
+   it_thresold_amt = select * from :it_thresold_amt1 where thr_ksl between :P_hsllow and :P_hslhigh;
+
+
+* SAS 99 P&L Reclass - Mark Dcouments only Contain PL Accounts
+
+  it_pl_flag_temp =   select  a.mandt, gjahr, rbukrs, belnr, racct, saknr from :it_Journal as a left outer join :lt_ska1 b
+                                        on a.racct = b.saknr;
+
+  it_pl_flag_temp1 =   select  mandt, gjahr, rbukrs, belnr, racct, saknr,
+                               case when    racct =  saknr then 0
+                                    else  1
+                               end as pl_cnt    from :it_pl_flag_temp;
+
+  it_pl_flag_temp2 = select mandt, gjahr, rbukrs, belnr,  sum( pl_cnt ) as pl_cnt_sum  from :it_pl_flag_temp1
+                           group by mandt, gjahr, rbukrs, belnr;
+
+  it_pl_flag =   select mandt, gjahr, rbukrs, belnr, 'Y' as pl_reclass_flag  from :it_pl_flag_temp2 where pl_cnt_sum =0;
+
+
+
+
+* Staging table for future SAS99 analysis that has threshold and aggregated debits applied
+   it_pre_final = select  a.*,  c.thr_hsl, abs(c.eo_hsl)  as eo_hsl,  abs(c.eo_tsl)  as eo_tsl,
+               c.thr_ksl,  spl_gl AS spl_gl, pl_reclass_flag
+              from :it_Journal as a
+                                     inner join   :it_thresold_amt c
+                                                on  a.mandt = c.mandt
+                                               and  a.gjahr = c.gjahr
+                                               and  a.rbukrs = c.rbukrs
+                                               and  a.belnr = c.belnr
+                                      left outer join :it_spcl_acct_docs b
+                                                on  a.mandt = b.mandt
+                                               and  a.gjahr = b.gjahr
+                                               and  a.rbukrs = b.rbukrs
+                                               and  a.belnr = b.belnr
+                                      left outer join :it_pl_flag d
+                                                on  a.mandt = d.mandt
+                                               and  a.gjahr = d.gjahr
+                                               and  a.rbukrs = d.rbukrs
+                                               and  a.belnr = d.belnr ;
+
+
+* Applying the following SAS99 flags for blank header text, weekend posting, whole number
+
+  it_final =  select a.*,
+* This is turning the date of the journal entry into text form for filter purposes (i.e. Monday, Tuesday, Saturday, etc.)
+
+                     (WEEKDAY (TO_DATE (a.TIMESTAMP)) + 1)  as week_day,
+* This is flagging   documents that have a blank header text
+                       case
+                            when bktxt  is null then  'N'
+                            WHEN bktxt = ''   THEN 'N'
+                            WHEN length(bktxt)  = 0  THEN 'N'
+                            ELSE 'Y' END AS no_h_text,
+*This is determining the number of days between the date the MJE was entered and the posting date
+                            days_between ( budat,  cpudt) as pre_post_days,
+
+*This is flagging documents that end in a whole number (0.00) based on transaction currency
+                  CASE  right ( CAST(eo_tsl as varchar), 4)
+                    WHEN   '0.00'    THEN 'Even'
+                    ELSE   'Odd' END
+                   AS  even_debit_flag,
+* This is joining the user temp table to add User type, Region   to the end data set  '' AS ZREGION,
+                   b.USTYP AS USTYP, b.CLASS as usergroup, c.zregion as zregion, 1 as reccnt
+                  from :it_pre_final as a
+                      inner join :lt_users b
+                      on a.usnam = b.BNAME
+                      left outer join :it_rbukts c
+                      on a.rbukrs = c.bukrs;
+
+
+  RETURN :it_final;
+
+
+
+ENDMETHOD.
+ENDCLASS.
