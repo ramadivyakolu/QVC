@@ -1,0 +1,28 @@
+@VDM.private: true
+@AbapCatalog.sqlViewName: 'ZFIVOIDREAS'
+ 
+@Analytics: { dataCategory: #DIMENSION }
+@VDM.viewType: #CONSUMPTION
+
+ 
+@ClientHandling.algorithm: #SESSION_VARIABLE
+@ClientHandling.type: #CLIENT_DEPENDENT
+@Metadata.ignorePropagatedAnnotations: true
+@ObjectModel.usageType: {
+  dataClass: #CUSTOMIZING,
+  serviceQuality: #A,
+  sizeCategory: #S
+}
+  
+ 
+define view ZFI_VOID_REASON
+  as select   from tvoit as a
+   
+{  
+   @ObjectModel.text.element: ['VoidReasonText']
+  key voidr as VoidReason, 
+  
+  @Semantics.text: true
+  UPPER(voidt) as  VoidReasonText
+      
+}    where mandt = $session.client and langu = 'E'
