@@ -1,0 +1,200 @@
+@AbapCatalog.sqlViewName: 'ZCD_FI_TIMEDIM'
+@AbapCatalog.compiler.compareFilter: true
+@AccessControl.authorizationCheck: #CHECK
+@EndUserText.label: 'Derivation: Calendar Calculation'
+define view ZCD_FI_TIMEDERIV
+  with parameters
+    //both use of quarter and posting period
+    p_period : poper,
+    p_year   : gjahr
+  as select distinct from C_GregorianCalDateFuncVH
+
+{
+  cast ( concat(:p_year, lpad( :p_period, 3, '0'))  as fis_jahrper)                                                                                            as CURRENTFISCPER,
+
+  cast (cast( ( cast($parameters.p_period as abap.int2) )  as abap.char(15) )   as poper)                                                                      as CURRENTPERIOD,
+
+  cast (cast( ( cast($parameters.p_period as abap.int2) - 1)  as abap.char(15) )   as poper)                                                                   as PPERIOD,
+
+  //Prev Year Same Fiscper
+  cast ( concat(  cast ( (cast(:p_year as abap.int2) - 1) as abap.char(15)), lpad( :p_period, 3, '0')) as fis_jahrper)                                         as PREVYRFISCPER,
+  //Same Year
+  cast( cast( $parameters.p_year as abap.int4 ) as abap.char(15) )                                                                                             as CURRENTYEAR,
+
+  left (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -1, 'FAIL') as abap.char( 6 )), 4)  as PYEAR1,
+
+  //cast( fiscyearper as fis_jahrper preserving type )
+  //Previous Fiscal period
+  concat ( left (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -1, 'FAIL') as abap.char( 6 )), 4),
+     lpad( right (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -1, 'FAIL') as abap.char( 6 )), 2), 3, '0')
+         )                                                                                                                                                     as PREVFISCPER1,
+
+  concat ( left (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -2, 'FAIL') as abap.char( 6 )), 4),
+     lpad( right (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -2, 'FAIL') as abap.char( 6 )), 2), 3, '0')
+         )                                                                                                                                                     as PREVFISCPER2,
+
+  left (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -2, 'FAIL') as abap.char( 6 )), 4)  as PYEAR2,
+
+  concat ( left (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -3, 'FAIL') as abap.char( 6 )), 4),
+   lpad( right (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -3, 'FAIL') as abap.char( 6 )), 2), 3, '0')
+       )                                                                                                                                                       as PREVFISCPER3,
+  concat ( left (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -11, 'FAIL') as abap.char( 6 )), 4),
+   lpad( right (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -11, 'FAIL') as abap.char( 6 )), 2), 3, '0')
+       )                                                                                                                                                       as PREV12,
+
+  concat ( left (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -10, 'FAIL') as abap.char( 6 )), 4),
+   lpad( right (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -10, 'FAIL') as abap.char( 6 )), 2), 3, '0')
+       )                                                                                                                                                       as PREV11,
+
+  concat ( left (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -9, 'FAIL') as abap.char( 6 )), 4),
+  lpad( right (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -9, 'FAIL') as abap.char( 6 )), 2), 3, '0')
+  )                                                                                                                                                            as PREV10,
+
+
+  concat ( left (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -8, 'FAIL') as abap.char( 6 )), 4),
+  lpad( right (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -8, 'FAIL') as abap.char( 6 )), 2), 3, '0')
+  )                                                                                                                                                            as PREV09,
+
+
+  concat ( left (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -7, 'FAIL') as abap.char( 6 )), 4),
+  lpad( right (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -7, 'FAIL') as abap.char( 6 )), 2), 3, '0')
+  )                                                                                                                                                            as PREV08,
+
+  concat ( left (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -6, 'FAIL') as abap.char( 6 )), 4),
+  lpad( right (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -6, 'FAIL') as abap.char( 6 )), 2), 3, '0')
+  )                                                                                                                                                            as PREV07,
+
+  concat ( left (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -5, 'FAIL') as abap.char( 6 )), 4),
+  lpad( right (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -5, 'FAIL') as abap.char( 6 )), 2), 3, '0')
+  )                                                                                                                                                            as PREV06,
+
+  concat ( left (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -4, 'FAIL') as abap.char( 6 )), 4),
+  lpad( right (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -4, 'FAIL') as abap.char( 6 )), 2), 3, '0')
+  )                                                                                                                                                            as PREV05,
+
+  concat ( left (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -3, 'FAIL') as abap.char( 6 )), 4),
+  lpad( right (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -3, 'FAIL') as abap.char( 6 )), 2), 3, '0')
+  )                                                                                                                                                            as PREV04,
+
+  concat ( left (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -2, 'FAIL') as abap.char( 6 )), 4),
+  lpad( right (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -2, 'FAIL') as abap.char( 6 )), 2), 3, '0')
+  )                                                                                                                                                            as PREV03,
+
+  concat ( left (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -1, 'FAIL') as abap.char( 6 )), 4),
+  lpad( right (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -1, 'FAIL') as abap.char( 6 )), 2), 3, '0')
+  )                                                                                                                                                            as PREV02,
+  //Current Qtr last Month
+  case    $parameters.p_period
+           when  '001'  then CONCAT($parameters.p_year, '003')  when  '002'  then CONCAT($parameters.p_year, '003') when  '003'  then CONCAT($parameters.p_year, '003')
+           when  '004'  then CONCAT($parameters.p_year, '006') when  '005'  then CONCAT($parameters.p_year, '006') when  '006'  then CONCAT($parameters.p_year, '006')
+           when  '007'  then CONCAT($parameters.p_year, '009') when  '008'  then CONCAT($parameters.p_year, '009') when  '009'  then CONCAT($parameters.p_year, '009')
+           else CONCAT($parameters.p_year, '012')
+    end                                                                                                                                                        as Q1HIGH,
+  //Current Qtr first Month
+  case    :p_period
+           when  '001'  then CONCAT($parameters.p_year, '001') when  '002'  then CONCAT($parameters.p_year, '001') when  '003'  then CONCAT($parameters.p_year, '001')
+           when  '004'  then CONCAT($parameters.p_year, '004') when  '005'  then CONCAT($parameters.p_year, '004') when  '006'  then CONCAT($parameters.p_year, '004')
+           when  '007'  then CONCAT($parameters.p_year, '007') when  '008'  then CONCAT($parameters.p_year, '007') when  '009'  then CONCAT($parameters.p_year, '007')
+           else CONCAT($parameters.p_year, '010')
+    end                                                                                                                                                        as Q1LOW,
+  //Prev Qtr Last Month
+  case   :p_period
+          when  '001'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '012') when  '002'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '012') when  '003'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '012')
+          when  '004'  then CONCAT($parameters.p_year, '003') when  '005'  then CONCAT($parameters.p_year, '003') when  '006'  then CONCAT($parameters.p_year, '003')
+          when  '007'  then CONCAT($parameters.p_year, '006') when  '008'  then CONCAT($parameters.p_year, '006') when  '009'  then CONCAT($parameters.p_year, '006')
+          else CONCAT($parameters.p_year, '009')
+   end                                                                                                                                                         as Q2HIGH,
+  //Prev Qtr First Month
+  case   :p_period
+          when  '001'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '010') when  '002'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '010') when  '003'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '010')
+          when  '004'  then CONCAT($parameters.p_year, '001') when  '005'  then CONCAT($parameters.p_year, '001') when  '006'  then CONCAT($parameters.p_year, '001')
+          when  '007'  then CONCAT($parameters.p_year, '004') when  '008'  then CONCAT($parameters.p_year, '004') when  '009'  then CONCAT($parameters.p_year, '004')
+          else CONCAT($parameters.p_year, '007')
+  end                                                                                                                                                          as Q2LOW,
+
+  //Prev Year Current Qtr last Month
+  case    $parameters.p_period
+           when  '001'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '003')  when  '002'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '003')
+           when  '003'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '003')
+           when  '004'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '006') when  '005'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '006')
+           when  '006'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '006')
+           when  '007'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '009') when  '008'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '009')
+           when  '009'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '009')
+           else CONCAT($parameters.p_year, '012')
+    end                                                                                                                                                        as PREVYRQ1HIGH,
+  //Prev Year Current Qtr first Month
+  case    :p_period
+           when  '001'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '001') when  '002'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '001')
+           when  '003'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '001')
+           when  '004'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '004') when  '005'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '004')
+           when  '006'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '004')
+           when  '007'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '007') when  '008'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '007')
+           when  '009'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '007')
+           else CONCAT($parameters.p_year, '010')
+    end                                                                                                                                                        as PREVYRQ1LOW,
+  //Prev Year Prev Qtr Last Month
+  case   :p_period
+          when  '001'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 2) as abap.char(15)), '012') when  '002'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 2) as abap.char(15)), '012')
+          when  '003'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 2) as abap.char(15)), '012')
+          when  '004'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '003') when  '005'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '003')
+          when  '006'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '003')
+          when  '007'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '006') when  '008'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '006')
+          when  '009'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '006')
+          else CONCAT($parameters.p_year, '009')
+   end                                                                                                                                                         as PREVYRQ2HIGH,
+  //Prev Year Prev Qtr First Month
+  case   :p_period
+          when  '001'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 2) as abap.char(15)), '010') when  '002'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 2) as abap.char(15)), '010')
+          when  '003'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 2) as abap.char(15)), '010')
+          when  '004'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '001') when  '005'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '001')
+          when  '006'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '001')
+          when  '007'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '004') when  '008'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '004')
+          when  '009'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '004')
+          else CONCAT($parameters.p_year, '007')
+  end                                                                                                                                                          as PREVYRQ2LOW,
+  //Current Year First First Month
+  CONCAT($parameters.p_year, '001')                                                                                                                            as CURRYRFIRSTFISCPER,
+  //Prev Year First Month
+  concat( cast( (cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '001')                                                                          as PREVYRFIRSTFISCPER,
+
+  case   :p_period
+        when  '001'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '010')
+        when  '002'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '010')
+        when  '003'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '010')
+        else CONCAT($parameters.p_year, '001')
+  end                                                                                                                                                          as FILTERLOW,
+
+  case    $parameters.p_period
+           when  '001'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '003')  when  '002'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '003') when  '003'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '003')
+           when  '004'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '006') when  '005'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '006') when  '006'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '006')
+           when  '007'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '009') when  '008'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '009') when  '009'  then CONCAT(cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15)), '009')
+           else CONCAT($parameters.p_year, '012')
+    end                                                                                                                                                        as PYSQ,
+
+  case  $parameters.p_period
+         when   '004'  then  cast((cast($parameters.p_year as abap.int4)) as abap.char(15))
+         when   '005'  then  cast((cast($parameters.p_year as abap.int4)) as abap.char(15))
+         when   '006'  then  cast((cast($parameters.p_year as abap.int4)) as abap.char(15))
+         when   '007'  then  cast((cast($parameters.p_year as abap.int4)) as abap.char(15))
+         when   '008'  then  cast((cast($parameters.p_year as abap.int4)) as abap.char(15))
+         when   '009'  then  cast((cast($parameters.p_year as abap.int4)) as abap.char(15))
+         when   '010'  then  cast((cast($parameters.p_year as abap.int4)) as abap.char(15))
+         when   '011'  then  cast((cast($parameters.p_year as abap.int4)) as abap.char(15))
+         when   '012'  then  cast((cast($parameters.p_year as abap.int4)) as abap.char(15))
+         else cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15))
+  end                                                                                                                                                          as BSPYR,
+
+
+  left (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -3, 'FAIL') as abap.char( 6 )), 4)  as PYEAR3,
+
+  cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -2, 'FAIL') as abap.char( 6 ))            as PREVFISCPER9,
+  cast((cast($parameters.p_year as abap.int4) - 1) as abap.char(15))                                                                                           as PYEAR,
+  //Prev Year Prev Period
+  concat ( left (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -13, 'FAIL') as abap.char( 6 )), 4),
+     lpad( right (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -13, 'FAIL') as abap.char( 6 )), 2), 3, '0')
+         )                                                                                                                                                     as PREVYRPREVFISCPER1,
+  //Prev Year Prev Period Period
+  left (cast (dats_add_months(cast (concat (concat(:p_year, right (lpad( :p_period, 3, '0'), 2)), '01')    as abap.dats ), -13, 'FAIL') as abap.char( 6 )), 4) as PREVYRPRPERIODYEAR
+}
+where
+  DateFunction = 'TODAY'

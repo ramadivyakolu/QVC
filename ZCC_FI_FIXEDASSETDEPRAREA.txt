@@ -1,0 +1,160 @@
+@AbapCatalog.sqlViewName: 'ZFASSETDEPR'
+@Analytics: { dataCategory: #DIMENSION, dataExtraction.enabled: true }
+@EndUserText.label: 'Fixed Asset Depreciation'
+@VDM.viewType: #BASIC
+@AccessControl.authorizationCheck: #CHECK
+@ObjectModel: { representativeKey: 'AssetRealDepreciationArea',
+                usageType.serviceQuality: #C,
+                usageType.sizeCategory: #XXL,
+                usageType.dataClass: #MASTER }
+@ClientHandling.algorithm: #SESSION_VARIABLE
+@Metadata.ignorePropagatedAnnotations: true
+
+define view ZCC_FI_FIXEDASSETDEPRAREA
+  as select from    anlb   as anlb
+
+    left outer join anlbza as anlbza on  anlb.bukrs = anlbza.bukrs
+                                     and anlb.anln1 = anlbza.anln1
+                                     and anlb.anln2 = anlbza.anln2
+                                     and anlb.afabe = anlbza.afabe
+
+  association [0..1] to I_CompanyCode                  as _CompanyCode               on  $projection.CompanyCode = _CompanyCode.CompanyCode
+  association [0..1] to I_MasterFixedAsset             as _MasterFixedAsset          on  $projection.CompanyCode      = _MasterFixedAsset.CompanyCode
+                                                                                     and $projection.MasterFixedAsset = _MasterFixedAsset.MasterFixedAsset
+  association [1..1] to I_FixedAsset                   as _FixedAsset                on  $projection.CompanyCode      = _FixedAsset.CompanyCode
+                                                                                     and $projection.FixedAsset       = _FixedAsset.FixedAsset
+                                                                                     and $projection.MasterFixedAsset = _FixedAsset.MasterFixedAsset
+  association [0..1] to I_RealDepreciationAreaByCoCode as _RealDepreciationArea      on  $projection.CompanyCode               = _RealDepreciationArea.CompanyCode
+                                                                                     and $projection.AssetRealDepreciationArea = _RealDepreciationArea.AssetRealDepreciationArea
+  association [0..1] to I_Currency                     as _Currency                  on  $projection.DepreciationAreaCurrency = _Currency.Currency
+  association [0..1] to I_ReplacementValueIndexSers    as _ReplacementValueIndexSers on  $projection.ReplacementValueIndexSers = _ReplacementValueIndexSers.ReplacementValueIndexSers
+
+{
+            @ObjectModel.foreignKey.association: '_CompanyCode'
+            @Consumption.valueHelpDefinition: [ { entity: { name: 'I_CompanyCodeStdVH', element: 'CompanyCode' } } ]
+  key       anlb.bukrs                                                                                              as CompanyCode,
+            @ObjectModel.foreignKey.association: '_MasterFixedAsset'
+            @Consumption.valueHelpDefinition: [ { entity: { name: 'I_MasterFixedAssetStdVH', element: 'MasterFixedAsset' },
+                                                  additionalBinding:  [ { localElement: 'CompanyCode', element: 'CompanyCode' } ]
+                                              } ]
+  key       anlb.anln1                                                                                              as MasterFixedAsset,
+            @ObjectModel.foreignKey.association: '_FixedAsset'
+            @Consumption.valueHelpDefinition: [ { entity: { name: 'I_FixedAssetStdVH', element: 'FixedAsset' },
+                                                  additionalBinding:  [ { localElement: 'CompanyCode', element: 'CompanyCode' },
+                                                                        { localElement: 'MasterFixedAsset', element: 'MasterFixedAsset' } ]
+                                              } ]
+  key       anlb.anln2                                                                                              as FixedAsset,
+  key       anlb.afabe                                                                                              as AssetRealDepreciationArea,
+            @Semantics.businessDate.to: true
+  key       case
+              when anlb.bukrs = anlbza.bukrs
+              then
+                   anlbza.bdatu
+              else
+                   anlb.bdatu
+              end                                                                                                   as ValidityEndDate,
+
+            @Semantics.businessDate.from: true
+            case
+              when anlbza.bukrs is not null and anlbza.adatu = '00000101'
+                then
+                   '19000101'
+              when anlbza.bukrs is not null and anlbza.adatu <> '00000101'
+                then
+                   anlbza.adatu
+              when anlbza.bukrs is null and anlb.adatu = '00000101'
+                then
+                   '19000101'
+              else
+            anlb.adatu
+            end                                                                                                     as ValidityStartDate,
+
+            anlb.afabg                                                                                              as DepreciationStartDate,
+            anlb.safbg                                                                                              as SpecialDeprStartDate,
+            anlb.zinbg                                                                                              as InterestCalcStartDate,
+            @ObjectModel.foreignKey.association: '_ReplacementValueIndexSers'
+            anlb.wbind                                                                                              as ReplacementValueIndexSers,
+            cast(anlb.alind as fis_alind)                                                                           as RplcmtValueAgingIndexSers,
+            @Semantics.currencyCode: true
+            @ObjectModel: { foreignKey.association: '_Currency'}
+            _RealDepreciationArea.Currency                                                                          as DepreciationAreaCurrency,
+            anlb.ndurj                                                                                              as OriglAstUsefulLifeInYears,
+            anlb.anlgr                                                                                              as GroupMasterFixedAsset,
+            @Semantics.businessDate.at: true
+            anlb.inbda                                                                                              as AssetOpgReadinessDate,
+            anlb.xnega                                                                                              as NegativeAmountIsAllowed,
+            anlb.xafbe                                                                                              as DepreciationAreaIsDactvtd,
+            anlb.j_1aarvkey                                                                                         as AssetRevaluation,
+            cast (anlb.invsl as faa_invsl)                                                                          as InvestmentSupportMeasure,
+            cast(anlb.umjar as fis_umjar)                                                                           as DeprKeyChangeoverYear,
+            anlb.umper                                                                                              as DeprKeyChangeoverPeriod,
+            cast(anlb.vmnth as fis_vmnth)                                                                           as VintageMonth,
+            @Semantics.calendar.year: true
+            cast(anlb.vyear as fis_vyear)                                                                           as VintageYear,
+            anlb.ndurp                                                                                              as OriglAstUsefulLifeInPerds,
+            anlb.anlgr2                                                                                             as GroupFixedAsset,
+
+            case
+              when anlb.bukrs = anlbza.bukrs
+                then
+                   anlbza.afasl
+                else
+            anlb.afasl
+            end                                                                                                     as DepreciationKey,
+
+            case
+              when anlb.bukrs = anlbza.bukrs
+                then
+                   cast(anlbza.ndjar as fis_ndjar)
+                else
+            cast(anlb.ndjar as fis_ndjar)
+            end                                                                                                     as PlannedUsefulLifeInYears,
+
+            case
+              when anlb.bukrs = anlbza.bukrs
+                then
+                   cast(anlbza.ndper as fis_ndper)
+                else
+            cast(anlb.ndper as fis_ndper)
+            end                                                                                                     as PlannedUsefulLifeInPeriods,
+
+            case
+              when anlb.bukrs = anlbza.bukrs
+                then
+                   anlbza.aprop
+                else
+            anlb.aprop
+            end                                                                                                     as VariableDeprPercent,
+
+            @DefaultAggregation: #NONE
+            @Semantics.amount.currencyCode: 'DepreciationAreaCurrency'
+            case
+              when anlb.bukrs = anlbza.bukrs
+                then
+                   anlbza.schrw
+                else
+            anlb.schrw
+            end                                                                                                     as ScrapAmountInCoCodeCrcy,
+
+            case
+              when anlb.bukrs = anlbza.bukrs
+                then
+                   anlbza.schrw_proz
+                else
+            anlb.schrw_proz
+            end                                                                                                     as AcqnProdnCostScrapPercent,
+            
+            naprz  as Ord_Depr_Pct_Rate,
+            saprz  as Spe_Depr_Pct_Rate,
+            
+
+
+            @ObjectModel.association.type: [ #TO_COMPOSITION_PARENT, #TO_COMPOSITION_ROOT ]
+            _FixedAsset,
+
+            _CompanyCode,
+            _MasterFixedAsset,
+            _RealDepreciationArea,
+            _Currency,
+            _ReplacementValueIndexSers
+}

@@ -1,0 +1,381 @@
+@AbapCatalog.sqlViewName: 'ZFIXASSET'
+@Analytics: { dataCategory: #CUBE, dataExtraction.enabled: false }
+@EndUserText.label: 'Asset Master Cube'
+@VDM.viewType: #COMPOSITE
+@AccessControl.authorizationCheck: #CHECK
+@ObjectModel: { usageType.serviceQuality: #D,
+                usageType.sizeCategory: #XXL,
+                usageType.dataClass: #MIXED }
+@ClientHandling.algorithm: #SESSION_VARIABLE
+@Metadata.ignorePropagatedAnnotations: true
+
+define view ZCC_FI_FIXEDASSET
+  as select distinct from anla      as anla
+
+    inner join            t001              on anla.bukrs = t001.bukrs
+
+    inner join            faav_anlc as anlc on  anla.bukrs = anlc.bukrs
+                                            and anla.anln1 = anlc.anln1
+                                            and anla.anln2 = anlc.anln2
+
+
+
+    inner join            t093b             on  anlc.bukrs = t093b.bukrs
+                                            and anlc.afabe = t093b.afabe
+
+    left outer join       anlv              on  anla.bukrs = anlv.bukrs
+                                            and anla.anln1 = anlv.anln1
+                                            and anla.anln2 = anlv.anln2
+                                              
+                                            
+
+  // Association to children
+  association [0..*] to I_FixedAssetAssgmt         as _FixedAssetAssgmt          on  $projection.CompanyCode      = _FixedAssetAssgmt.CompanyCode
+                                                                                 and $projection.MasterFixedAsset = _FixedAssetAssgmt.MasterFixedAsset
+                                                                                 and $projection.FixedAsset       = _FixedAssetAssgmt.FixedAsset
+  association [0..*] to ZCC_FI_FIXEDASSETDEPRAREA  as _FixedAssetDeprArea        on  $projection.CompanyCode      = _FixedAssetDeprArea.CompanyCode
+                                                                                 and $projection.MasterFixedAsset = _FixedAssetDeprArea.MasterFixedAsset
+                                                                                 and $projection.FixedAsset       = _FixedAssetDeprArea.FixedAsset
+                                                                                 and $projection.deparea          = _FixedAssetDeprArea.AssetRealDepreciationArea  
+
+  //Associations to Object Core Views
+  association [0..1] to I_CompanyCode              as _CompanyCode               on  $projection.CompanyCode = _CompanyCode.CompanyCode
+  association [0..1] to I_MasterFixedAsset         as _MasterFixedAsset          on  $projection.CompanyCode      = _MasterFixedAsset.CompanyCode
+                                                                                 and $projection.MasterFixedAsset = _MasterFixedAsset.MasterFixedAsset
+  association [0..1] to I_AssetClass               as _AssetClass                on  $projection.AssetClass = _AssetClass.AssetClass
+  association [0..1] to I_Currency                 as _Currency                  on  $projection.Currency = _Currency.Currency
+  association [0..1] to I_Globalcompany            as _PartnerCompany            on  $projection.PartnerCompany = _PartnerCompany.Company
+  association [0..1] to I_AssetAcctDetermination   as _AssetAccountDetermination on  $projection.AssetAccountDetermination = _AssetAccountDetermination.AssetAccountDetermination
+  association [0..1] to I_Supplier                 as _Supplier                  on  $projection.Supplier = _Supplier.Supplier
+  association [0..1] to I_Country                  as _AssetCountryOfOrigin      on  $projection.AssetCountryOfOrigin = _AssetCountryOfOrigin.Country
+  association [0..1] to I_UnitOfMeasure            as _UnitOfMeasure             on  $projection.BaseUnit = _UnitOfMeasure.UnitOfMeasure
+
+  association [0..1] to I_AssetEvaluationGroup1    as _Group1AssetEvaluationKey  on  $projection.Group1AssetEvaluationKey = _Group1AssetEvaluationKey.Group1AssetEvaluationKey
+  association [0..1] to I_AssetEvaluationGroup2    as _Group2AssetEvaluationKey  on  $projection.Group2AssetEvaluationKey = _Group2AssetEvaluationKey.Group2AssetEvaluationKey
+  association [0..1] to I_AssetEvaluationGroup3    as _Group3AssetEvaluationKey  on  $projection.Group3AssetEvaluationKey = _Group3AssetEvaluationKey.Group3AssetEvaluationKey
+  association [0..1] to I_AssetEvaluationGroup4    as _Group4AssetEvaluationKey  on  $projection.Group4AssetEvaluationKey = _Group4AssetEvaluationKey.Group4AssetEvaluationKey
+  association [0..1] to I_Group5AssetEvaluationKey as _Group5AssetEvaluationKey  on  $projection.Group5AssetEvaluationKey = _Group5AssetEvaluationKey.Group5AssetEvaluationKey
+  association [0..1] to I_InvestmentReason         as _InvestmentReason          on  $projection.InvestmentReason = _InvestmentReason.InvestmentReason
+  association [0..1] to I_EnvrnmtlInvestmentReason as _EnvrnmtlInvestmentReason  on  $projection.EnvrnmtlInvestmentReason = _EnvrnmtlInvestmentReason.EnvrnmtlInvestmentReason
+  association [0..1] to I_FixedAssetFinDataCmpltns as _FixedAssetFinDataCmpltns  on  $projection.FixedAssetFinDataCmpltns = _FixedAssetFinDataCmpltns.FixedAssetFinDataCmpltns
+  association [0..1] to I_FixedAssetPropertyType   as _FixedAssetPropertyType    on  $projection.FixedAssetPropertyType = _FixedAssetPropertyType.FixedAssetPropertyType
+  association [0..1] to I_ManualDepreciationReason as _ManualDepreciationReason  on  $projection.ManualDepreciationReason = _ManualDepreciationReason.ManualDepreciationReason
+  association [0..1] to I_FixedAssetGroup          as _FixedAssetGroup           on  $projection.FixedAssetGroup = _FixedAssetGroup.FixedAssetGroup
+  association [0..1] to I_InternalOrder            as _InvestmentOrder           on  $projection.InvestmentOrder = _InvestmentOrder.InternalOrder
+
+  // Association to Extension View
+  association [1..1] to E_FixedAsset               as _Extension                 on  $projection.MasterFixedAsset = _Extension.MasterFixedAsset
+                                                                                 and $projection.FixedAsset       = _Extension.FixedAsset
+                                                                                 and $projection.CompanyCode      = _Extension.CompanyCode
+
+  association [0..*] to I_CostCenter               as _CostCenter                on  $projection.CostCenter      = _CostCenter.CostCenter
+                                                                                 and $projection.controllingarea = _CostCenter.ControllingArea
+  association [0..1] to I_Plant                    as _Plant                     on  $projection.Plant = _Plant.Plant
+  association [0..1] to I_BusinessArea             as _BusinessArea              on  $projection.BusinessArea = _BusinessArea.BusinessArea
+
+  association [0..1] to I_Location                 as _AssetLocation             on  $projection.AssetLocation = _AssetLocation.Location
+                                                                                 and $projection.Plant         = _AssetLocation.Plant
+  association [0..1] to I_FunctionalArea           as _FunctionalArea            on  $projection.FunctionalArea = _FunctionalArea.FunctionalArea
+
+{
+      //Key fields
+      @ObjectModel.foreignKey.association: '_CompanyCode'
+      @Consumption.valueHelpDefinition: [ { entity: { name: 'I_CompanyCodeStdVH', element: 'CompanyCode' } } ]
+  key anla.bukrs                                      as CompanyCode,
+      @ObjectModel.foreignKey.association: '_MasterFixedAsset'
+      @Consumption.valueHelpDefinition: [ { entity: { name: 'I_MasterFixedAssetStdVH', element: 'MasterFixedAsset' },
+                                            additionalBinding:  [ { localElement: 'CompanyCode', element:'CompanyCode' } ]
+                                        } ]
+  key anla.anln1                                      as MasterFixedAsset,
+      @ObjectModel.text.element: ['FixedAssetDescription']
+      @Consumption.valueHelpDefinition: [ { entity: { name: 'I_FixedAssetStdVH', element: 'FixedAsset' },
+                                            additionalBinding:  [ { localElement: 'CompanyCode', element: 'CompanyCode' },
+                                                                  { localElement: 'MasterFixedAsset', element: 'MasterFixedAsset' } ]
+                                        } ]
+  key anla.anln2                                      as FixedAsset,
+
+      //Relevant Fields
+      @Consumption.filter.hidden: true
+      case anla.anln2
+        when '0000'
+          then cast(concat(ltrim(anla.anln1, '0'), '-0') as fis_fixedasset_ext_id)
+      else
+        cast(concat(concat( ltrim(anla.anln1, '0') , '-'), ltrim( anla.anln2, '0' )) as fis_fixedasset_ext_id)
+      end                                             as FixedAssetExternalID,
+      @ObjectModel.foreignKey.association: '_AssetClass'
+      @Consumption.valueHelpDefinition: [ { entity: { name: 'I_AssetClassStdVH', element: 'AssetClass' } } ]
+      anla.anlkl                                      as AssetClass,
+      @Consumption.filter.hidden: true
+      anla.sernr                                      as AssetSerialNumber,
+
+      @Semantics.unitOfMeasure:true
+      @ObjectModel: { foreignKey.association: '_UnitOfMeasure', mandatory: false }
+      @Consumption.filter.hidden: true
+      anla.meins                                      as BaseUnit,
+
+
+      //      @Semantics.quantity.unitOfMeasure: 'BaseUnit'
+      //      @DefaultAggregation:#NONE
+      //      @Consumption.filter.hidden: true
+      //      anla.menge                                      as Quantity,
+
+      @Consumption.filter.hidden: true
+      anla.invnr                                      as Inventory,
+      @Semantics.text:true
+      anla.txt50                                      as FixedAssetDescription,
+      @Semantics.text:true
+      @Consumption.filter.hidden: true
+      anla.txa50                                      as AssetAdditionalDescription,
+      @Semantics.currencyCode: true
+      @ObjectModel: { foreignKey.association: '_Currency', readOnly: true }
+      @Consumption.filter.hidden: true
+      _CompanyCode.Currency                           as Currency,
+      //      @Semantics.amount.currencyCode: 'Currency'
+      //      @DefaultAggregation: #NONE
+      //      @Consumption.filter.hidden: true
+      //      anla.urwrt                                      as OriglAcqnAmtInCoCodeCrcy,
+      @ObjectModel.foreignKey.association: '_PartnerCompany'
+      @Consumption.filter.hidden: true
+      anla.vbund                                      as PartnerCompany,
+      @Consumption.filter.hidden: true
+      anla.herst                                      as AssetManufacturerName,
+      @Consumption.filter.hidden: true
+      anla.antei                                      as InHouseProdnPercent,
+      @Consumption.filter.hidden: true
+      anla.liefe                                      as AssetSupplierName,
+      @Consumption.filter.hidden: true
+      anla.invzu                                      as InventoryNote,
+      @ObjectModel.foreignKey.association: '_Group1AssetEvaluationKey'
+
+      anla.ord41                                      as Group1AssetEvaluationKey,
+      @ObjectModel.foreignKey.association: '_Group2AssetEvaluationKey'
+
+      anla.ord42                                      as Group2AssetEvaluationKey,
+      @ObjectModel.foreignKey.association: '_Group3AssetEvaluationKey'
+
+      anla.ord43                                      as Group3AssetEvaluationKey,
+      @ObjectModel.foreignKey.association: '_Group4AssetEvaluationKey'
+
+      anla.ord44                                      as Group4AssetEvaluationKey,
+
+      @ObjectModel.foreignKey.association: '_Group5AssetEvaluationKey'
+      anla.gdlgrp                                     as Group5AssetEvaluationKey,
+
+
+      @ObjectModel.foreignKey.association: '_AssetAccountDetermination'
+      anla.ktogr                                      as AssetAccountDetermination,
+      @Consumption.filter.hidden: true
+      anla.aneqk                                      as HasHistory,
+      anla.aktiv                                      as AssetCapitalizationDate,
+      @Semantics.fiscal.year: true
+      @Consumption.filter.hidden: true
+      anla.zujhr                                      as FirstAcquisitionFiscalYear,
+      @Semantics.fiscal.period: true
+      @Consumption.filter.hidden: true
+      anla.zuper                                      as FirstAcquisitionFiscalPeriod,
+      @Consumption.filter.hidden: true
+      anla.deakt                                      as AssetDeactivationDate,
+      @Consumption.filter.hidden: true
+      anla.gplab                                      as PlannedRetirementDate,
+      @Consumption.filter.hidden: true
+      anla.bstdt                                      as FixedAssetOrderDate,
+      @Consumption.filter.hidden: true
+      anla.aibn1                                      as OriginalMasterFixedAsset,
+      @ObjectModel.foreignKey.association: '_FixedAssetGroup'
+      @Consumption.filter.hidden: true
+      anla.anlue                                      as FixedAssetGroup,
+      @ObjectModel.foreignKey.association: '_InvestmentReason'
+      @Consumption.filter.hidden: true
+      anla.izwek                                      as InvestmentReason,
+      @Consumption.filter.hidden: true
+      anla.aimmo                                      as AssetIsRealEstate,
+      @Consumption.filter.hidden: true
+      anla.feins                                      as AreaSizeUnit,
+      @ObjectModel.foreignKey.association: '_InvestmentOrder'
+      @Consumption.filter.hidden: true
+      @Consumption.valueHelpDefinition: [ { entity: { name: 'I_InternalOrderStdVH', element: 'InternalOrder' } } ]
+      anla.eaufn                                      as InvestmentOrder,
+      @Consumption.filter.hidden: true
+      anla.posnr                                      as InvestmentProjectWBSElement,
+      @Consumption.filter.hidden: true
+      anla.inken                                      as InventoryIsCounted,
+      @Consumption.filter.hidden: true
+      anla.ivdat                                      as LastInventoryDate,
+      @Consumption.filter.hidden: true
+      anla.act_change_pm                              as AssetSynchronizationRule,
+      @Semantics.fiscal.year: true
+      @Consumption.filter.hidden: true
+      anla.urjhr                                      as OriginalAcquisitionFiscalYear,
+      @Consumption.filter.hidden: true
+      anla.typbz                                      as AssetTypeName,
+      @ObjectModel.foreignKey.association: '_Supplier'
+      @Consumption.filter.hidden: true
+      @Consumption.valueHelpDefinition: [ { entity: { name: 'I_Supplier_VH', element: 'Supplier' } } ]
+      anla.lifnr                                      as Supplier,
+      @ObjectModel.foreignKey.association: '_AssetCountryOfOrigin'
+      @Consumption.filter.hidden: true
+      anla.land1                                      as AssetCountryOfOrigin,
+      @Consumption.filter.hidden: true
+      anla.ehwnr                                      as NoticeOfAssessmentTaxID,
+      @Consumption.filter.hidden: true
+      anla.ehwzu                                      as LastAssessmentNoticeDate,
+      @ObjectModel.foreignKey.association: '_EnvrnmtlInvestmentReason'
+      @Consumption.filter.hidden: true
+      anla.umwkz                                      as EnvrnmtlInvestmentReason,
+      @Semantics.businessDate.lastChangedAt: true
+      @Consumption.filter.hidden: true
+      case when anla.aedat = '' then cast('00000000' as fis_aedat_anla)
+        else cast(anla.aedat as fis_aedat_anla)
+      end                                             as LastChangeDate,
+      @ObjectModel.foreignKey.association: '_FixedAssetFinDataCmpltns'
+      @Consumption.filter.hidden: true
+      anla.aneqs                                      as FixedAssetFinDataCmpltns,
+      @Consumption.filter.hidden: true
+      anla.xloev                                      as AccountIsMarkedForDeletion,
+      @Consumption.filter.hidden: true
+      anla.xspeb                                      as AccountIsBlockedForPosting,
+      @Consumption.filter.hidden: true
+      anla.zugdt                                      as AcquisitionValueDate,
+      @Consumption.filter.hidden: true
+      anla.aibdt                                      as OriginalFixedAssetValueDate,
+      @Consumption.filter.hidden: true
+      anla.xinvm                                      as AssetUnderConstIsInvmtMsr,
+      @Consumption.filter.hidden: true
+      anla.abgdt                                      as LastRetirementValueDate,
+      @Consumption.filter.hidden: true
+      anla.aenam                                      as LastChangedByUser,
+      @ObjectModel.foreignKey.association: '_FixedAssetPropertyType'
+      @Consumption.filter.hidden: true
+      anla.eigkz                                      as FixedAssetPropertyType,
+      @Semantics.businessDate.createdAt: true
+      @Consumption.filter.hidden: true
+      anla.erdat                                      as CreationDate,
+      @Consumption.filter.hidden: true
+      anla.ernam                                      as CreatedByUser,
+      @ObjectModel.foreignKey.association: '_ManualDepreciationReason'
+      @Consumption.filter.hidden: true
+      anla.grund                                      as ManualDepreciationReason,
+      @Consumption.filter.hidden: true
+      cast (anla.last_reorg_date as faa_lastreorgdat) as LastReorganizationDate,
+      @Consumption.filter.hidden: true
+      anla.ldt_date                                   as LegacyDataTransferDate,
+      @Consumption.filter.hidden: true
+      anla.xanlgr                                     as IsGroupAsset,
+      @Consumption.filter.hidden: true
+      anla.xopvw                                      as IsLineItemSettled,
+      @Consumption.filter.hidden: true
+      anla.aibn2                                      as OriginalFixedAsset,
+      @Consumption.filter.hidden: true
+      anla.mcoa1                                      as MasterFixedAssetSearchTerm,
+      @ObjectModel: { readOnly: true }
+      case
+      when anla.xafabch = 'X' then cast( 'X' as fis_asset_purchased_new_or_usd)
+      when anla.xafabch = 'Y' then cast( 'Y' as fis_asset_purchased_new_or_usd)
+      else cast('N' as fis_asset_purchased_new_or_usd)
+      end                                             as AssetStatusAtPurchase,
+
+
+      anla.leafi                                      as LeasingCompany,
+      anla.lvdat                                      as LeaseingAggrDate,
+      anla.lkdat                                      as LeaseingAggrNoticeDate,
+      anla.leabg                                      as LeaseStartDate,
+      anla.lejar                                      as LeaseYears,
+      anla.leper                                      as LeaseIPeriods,
+      anla.lryth                                      as LeasePaymentCycle,
+      anla.legeb                                      as LeasePayment,
+      anla.lbasw                                      as LeasingBaseValue,
+      anla.lkauf                                      as LeasedPurchasePrice,
+      anla.lmzin                                      as LeasingMonthlyInterest,
+      t001.waers                                      as CompCurrencyKey,
+
+      // ANLB Fields
+      _FixedAssetDeprArea.AssetRealDepreciationArea   as AssetRealDepreciationArea,
+      _FixedAssetDeprArea.InvestmentSupportMeasure    as InvestmentSupportMeasure,
+      _FixedAssetDeprArea.DepreciationKey             as DepreciationKey,
+      _FixedAssetDeprArea.PlannedUsefulLifeInYears    as PlannedUsefulLifeInYears,
+      _FixedAssetDeprArea.PlannedUsefulLifeInPeriods  as PlannedUsefulLifeInPeriods,
+      _FixedAssetDeprArea.Ord_Depr_Pct_Rate           as Ord_Depr_Pct_Rate,
+      _FixedAssetDeprArea.Spe_Depr_Pct_Rate           as Spe_Depr_Pct_Rate,
+
+
+
+      // ANLC Fields
+      anlc.gjahr                                      as FiscYear,
+      anlc.afabe                                      as deparea,
+      anlc.ndabj                                      as EUL,
+      anlc.ndabp                                      as ELP,
+      anlc.kansw                                      as Cum_Acquis_Val,
+      anlc.kaafa                                      as Cum_Unplnd_Dep,
+      anlc.nafap                                      as Plnd_Ord_Dep,
+      anlc.safap                                      as Plnd_Spec_Dep,
+      anlc.mafag                                      as Res_Posted,
+      anlc.abgan                                      as Retirement,
+      anlc.answl                                      as Ast_Val_Trans,
+      anlc.zusna                                      as W_up_Ord_Dep,
+      anlc.zussa                                      as W_up_Spec_Dep,
+      anlc.zusaa                                      as W_up_Unplnd_Dep,
+      anlc.safav                                      as Prop_Cum_S_Dep,
+      anlc.aafav                                      as Prop_Cum_Upl_Dep,
+      t093b.waers                                     as Currency_key,
+
+      // ANLV Fields
+      anlv.vsart                                      as Typ,
+      anlv.vsges                                      as IC,
+      anlv.vsztx                                      as Supplementary_insurance_text,
+      anlv.vrsbg                                      as Ins_st_dat,
+      anlv.vstar                                      as Rate,
+
+      // ANLZ Fields
+      @ObjectModel.foreignKey.association: '_CostCenter'
+      _FixedAssetAssgmt.CostCenter                    as CostCenter,
+      _FixedAssetAssgmt.ControllingArea               as controllingarea,
+
+      @ObjectModel.foreignKey.association: '_Plant'
+      _FixedAssetAssgmt.Plant                         as Plant,
+
+      @ObjectModel.foreignKey.association: '_FunctionalArea'
+      _FixedAssetAssgmt.FunctionalArea                as FunctionalArea,
+
+      @ObjectModel.foreignKey.association: '_BusinessArea'
+      _FixedAssetAssgmt.BusinessArea                  as BusinessArea,
+
+      @ObjectModel.foreignKey.association: '_AssetLocation'
+      _FixedAssetAssgmt.AssetLocation                 as AssetLocation,
+
+      _FixedAssetAssgmt.AssetLocation                 as Room,
+      _FixedAssetAssgmt.IsShutDown                    as IsShutDown,
+
+
+      // Define the children
+      @ObjectModel.association.type: [ #TO_COMPOSITION_CHILD ]
+      _FixedAssetAssgmt,
+      @ObjectModel.association.type: [ #TO_COMPOSITION_CHILD ]
+      _FixedAssetDeprArea,
+
+      _CompanyCode,
+      _MasterFixedAsset,
+      _AssetClass,
+      _Currency,
+      _UnitOfMeasure,
+      _PartnerCompany,
+      _Group1AssetEvaluationKey,
+      _Group2AssetEvaluationKey,
+      _Group3AssetEvaluationKey,
+      _Group4AssetEvaluationKey,
+      _Group5AssetEvaluationKey,
+      _AssetAccountDetermination,
+      _Supplier,
+      _AssetCountryOfOrigin,
+      _InvestmentReason,
+      _EnvrnmtlInvestmentReason,
+      _FixedAssetFinDataCmpltns,
+      _FixedAssetPropertyType,
+      _ManualDepreciationReason,
+      _FixedAssetGroup,
+      _InvestmentOrder,
+      _CostCenter,
+      _Plant,
+      _BusinessArea,
+      _AssetLocation,
+      _FunctionalArea
+}

@@ -1,0 +1,225 @@
+@AbapCatalog.sqlViewName: 'ZFASSETMSTRQ'
+@AccessControl.authorizationCheck: #PRIVILEGED_ONLY
+@VDM.viewType: #CONSUMPTION
+@Analytics.query: true
+@EndUserText.label: 'Outstanding Checks Report'
+@AbapCatalog.buffering.status: #NOT_ALLOWED
+@ObjectModel: { usageType.serviceQuality: #D,
+                usageType.sizeCategory: #XXL,
+                usageType.dataClass: #MIXED }
+@ClientHandling.algorithm: #SESSION_VARIABLE
+@Metadata.ignorePropagatedAnnotations: true
+
+define view ZCC_FI_OUTSTND_CHKS_Q
+  with parameters
+    @Consumption.hidden: true
+    @Environment.systemField: #SYSTEM_LANGUAGE
+    P_Language           : sylangu,
+    @Consumption.hidden: true
+    @Environment.systemField: #SYSTEM_DATE
+    P_KeyDate            : fagl_keydate,
+    @Consumption.hidden: true
+    @Environment.systemField: #USER
+    P_BusinessUser       : syuname,
+
+    @Consumption.hidden: true
+    @Consumption.derivation: {lookupEntity: 'ZCD_CalendarDate', resultElement: 'FirstDayOfMonthDate' ,
+    binding: [{ targetParameter: 'P_KeyDate', type: #PARAMETER, value: 'P_KeyDate' } ]}
+    P_FirstDayOfMonth    : fagl_keydate,
+
+    @Consumption.hidden: true
+    @Consumption.derivation: {lookupEntity: 'ZCD_CalendarDate', resultElement: 'LastDayOfPrevMonthDate' ,
+    binding: [{ targetParameter: 'P_KeyDate', type: #PARAMETER, value: 'P_KeyDate' } ]}
+    P_LastDayOfPrevMonth : fagl_keydate
+
+
+
+  as select from ZCC_FI_OUTSTND_CHKS
+                 ( P_FirstDayOfMonth :    :P_FirstDayOfMonth,
+                 P_LastDayOfPrevMonth :  :P_LastDayOfPrevMonth )
+
+{
+  //Rows:
+  //=====
+
+
+  @Consumption.semanticObject: 'CompanyCode'
+  @Consumption.filter: {selectionType: #SINGLE, multipleSelections: true, mandatory: true}
+  @Consumption.valueHelpDefinition: [{  entity: {name: 'I_COMPANYCODESTDVH', element: 'CompanyCode'}}]
+  @AnalyticsDetails.query.variableSequence : 10
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Paying Company Code'
+  @AnalyticsDetails.query.display: #KEY_TEXT
+  CompanyCode,
+
+
+
+  @Consumption.filter: {selectionType: #SINGLE, multipleSelections: true, mandatory: false}
+  @Consumption.valueHelpDefinition: [{ entity:  { name:    'I_HouseBankStdVH',  element: 'HouseBank' },
+                                       additionalBinding: [{ localElement: 'CompanyCode', element: 'CompanyCode' }]}]
+  @AnalyticsDetails.query.variableSequence : 20
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'House Bank'
+  @AnalyticsDetails.query.display: #KEY_TEXT
+  HouseBank,
+
+  @Consumption.filter: {selectionType: #SINGLE, multipleSelections: true, mandatory: false}
+  @Consumption.valueHelpDefinition: [ { entity:  { name:    'I_HouseBankAccountVH', element: 'HouseBankAccount' },
+                                         additionalBinding: [{ localElement: 'CompanyCode', element: 'CompanyCode' },
+                                                             { localElement: 'HouseBank', element: 'HouseBank' }] }]
+  @AnalyticsDetails.query.variableSequence : 21
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'House Bank'
+  @AnalyticsDetails.query.display: #KEY_TEXT
+  HouseBankAccount,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Check Number'
+  @AnalyticsDetails.query.display: #KEY
+  CheckNumber,
+
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Check Type'
+  @AnalyticsDetails.query.display: #KEY_TEXT
+  Checktype,
+
+
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Payment Run Date'
+  @AnalyticsDetails.query.display: #KEY_TEXT
+  PaymentRunDate,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Payment Run ID'
+  @AnalyticsDetails.query.display: #KEY_TEXT
+  PaymentRunID,
+
+  @Consumption.filter: {selectionType: #SINGLE, multipleSelections: true, mandatory: false}
+  @Consumption.valueHelpDefinition: [{ entity:{ name: 'I_Supplier_VH', element:'Supplier' } }]
+  @AnalyticsDetails.query.variableSequence : 30
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Supplier'
+  @AnalyticsDetails.query.display: #KEY_TEXT
+  Supplier,
+
+
+  @Consumption.filter: { selectionType : #RANGE, multipleSelections : true, hidden : false, mandatory: false }
+  @Consumption.valueHelp: '_GLAccount.GLAccount'
+  @EndUserText.label: 'GL Account'
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @AnalyticsDetails.query.display: #KEY_TEXT
+  GLAccount,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Payment Doc'
+  @AnalyticsDetails.query.display: #KEY_TEXT
+  PaymentDoc,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Payment Doc Year'
+  @AnalyticsDetails.query.display: #KEY_TEXT
+  PaymentDocYr,
+
+  @Consumption.filter: { selectionType : #RANGE, multipleSelections : true, hidden : false, mandatory: false }
+  @AnalyticsDetails.query.variableSequence : 23
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @EndUserText.label: 'Paymen Date'
+  @AnalyticsDetails.query.display: #KEY_TEXT
+  PaymenDate,
+
+  @Consumption.filter: { selectionType : #RANGE, multipleSelections : true, hidden : false, mandatory: false }
+  @AnalyticsDetails.query.variableSequence : 26
+  @Consumption.valueHelp: '_CheckEncashmentDate.CalendarDay'
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @EndUserText.label: 'Check Encash Date'
+  @AnalyticsDetails.query.display: #KEY_TEXT
+  CheckEncashmentDate,
+
+
+
+  @AnalyticsDetails.query.axis: #FREE
+  @AnalyticsDetails.query.totals: #HIDE
+  @EndUserText.label: 'Check Encash Date Filter'
+  @AnalyticsDetails.query.display: #KEY_TEXT
+  CheckEncashmentDateFilter,
+
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @EndUserText.label: 'Void Reason'
+  @AnalyticsDetails.query.display: #KEY_TEXT
+  VoidReason,
+  @Semantics.text
+  _Voidreason.VoidReasonText as VoidReasonText,
+
+
+  @Consumption.filter: { selectionType : #RANGE, multipleSelections : true, hidden : false, mandatory: false }
+  @AnalyticsDetails.query.variableSequence : 24
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @EndUserText.label: 'Void Date'
+  @AnalyticsDetails.query.display: #KEY
+  VoidDate,
+
+  @EndUserText.label: 'Payee Name'
+  PayeeName,
+  @EndUserText.label: 'Payee Street'
+  PayeeStreet,
+  @EndUserText.label: 'Payee City'
+  PayeeCity,
+  @EndUserText.label: 'Payee Postal CD'
+  PayeePostalCD,
+  @EndUserText.label: 'Payee Region'
+  PayeeRegion,
+  @EndUserText.label: 'Payee Name Address'
+  PayeeAddr,
+
+
+
+  @EndUserText.label: 'Encash Incl Filter'
+  EncashInclFilter,
+
+  @EndUserText.label: 'Payment Date Incl Filter'
+  PaymentDateInclFilter,
+
+  @EndUserText.label: 'Void Date Incl Filter'
+  VoidDateInclFilter,
+
+
+  @AnalyticsDetails.query.axis: #FREE
+  @EndUserText.label: 'Cut Off Date'
+  @AnalyticsDetails.query.display: #KEY_TEXT
+  LastDayOfPrevMonth,
+
+  @AnalyticsDetails.query.axis: #FREE
+  @AnalyticsDetails.query.display: #KEY_TEXT
+  @EndUserText.label:'First Day of month'
+  FirstDayOfMonth,
+
+  @AnalyticsDetails.query.axis: #COLUMNS
+  @Semantics.currencyCode:true
+  @EndUserText.label: 'Currency'
+  Currency,
+
+  @AnalyticsDetails.query.axis: #COLUMNS
+  @DefaultAggregation: #SUM
+  @Semantics.amount.currencyCode: 'Currency'
+  @EndUserText.label: 'Paid Amount'
+  PaidAmount
+
+}

@@ -1,0 +1,202 @@
+@AbapCatalog.sqlViewName: 'ZOUSTCHKS'
+@VDM.viewType: #COMPOSITE
+@ClientHandling.algorithm: #SESSION_VARIABLE
+@AccessControl.authorizationCheck: #NOT_REQUIRED
+@EndUserText.label: 'Oustanding Checks Cube'
+@Analytics: { dataCategory: #CUBE, dataExtraction.enabled: false }
+@ObjectModel: { usageType.serviceQuality: #D,
+                usageType.sizeCategory: #XXL,
+                usageType.dataClass: #MIXED }
+@Metadata.ignorePropagatedAnnotations: true
+
+
+define view ZCC_FI_OUTSTND_CHKS
+  with parameters
+
+    P_FirstDayOfMonth    : fagl_keydate,
+    P_LastDayOfPrevMonth : fagl_keydate
+
+  as select from payr
+  association [0..1] to I_CompanyCode      as _CompanyCode         on  $projection.CompanyCode = _CompanyCode.CompanyCode
+  association [1..1] to I_Housebank        as _HouseBank           on  $projection.HouseBank   = _HouseBank.HouseBank
+                                                                   and $projection.CompanyCode = _HouseBank.CompanyCode
+
+  association [0..1] to I_HouseBankAccount as _HouseBankAccount    on  $projection.CompanyCode      = _HouseBankAccount.CompanyCode
+                                                                   and $projection.HouseBankAccount = _HouseBankAccount.HouseBankAccount
+                                                                   and $projection.HouseBank        = _HouseBankAccount.HouseBank
+
+  //  association [0..1] to I_PaymentMethod    as _PaymentMethod       on  $projection.Country       = _PaymentMethod.Country
+  //                                                                   and $projection.PaymentMethod = _PaymentMethod.PaymentMethod
+
+  association [0..1] to I_CalendarDate     as _PaymentRunDate      on  $projection.PaymentRunDate = _PaymentRunDate.CalendarDate
+
+  association [0..1] to I_CalendarDate     as _PaymentDate         on  $projection.PaymenDate = _PaymentDate.CalendarDate
+
+  association [0..1] to I_CalendarDate     as _CheckEncashmentDate on  $projection.CheckEncashmentDate = _CheckEncashmentDate.CalendarDate
+
+  association [0..1] to I_CalendarDate     as _VoidDate            on  $projection.VoidDate = _VoidDate.CalendarDate
+
+
+  association [0..1] to ZFI_VOID_REASON    as _Voidreason          on  $projection.VoidReason = _Voidreason.VoidReason
+
+  association [0..1] to I_Supplier         as _Supplier            on  $projection.Supplier = _Supplier.Supplier
+
+  association [0..1] to I_SupplierCompany  as _SupplierCompany     on  $projection.Supplier    = _SupplierCompany.Supplier
+                                                                   and $projection.CompanyCode = _SupplierCompany.CompanyCode
+
+  association [1..1] to I_GLAccount        as _GLAccount           on  $projection.GLAccount   = _GLAccount.GLAccount
+                                                                   and $projection.CompanyCode = _GLAccount.CompanyCode
+
+{
+       @ObjectModel.foreignKey.association: '_CompanyCode'
+       @Consumption.valueHelpDefinition: [{ entity:{ name: 'I_CompanyCodeVH', element: 'CompanyCode' } }]
+  key  payr.zbukr                                                                                                                         as CompanyCode,
+
+
+       @ObjectModel.foreignKey.association: '_HouseBank'
+  key  payr.hbkid                                                                                                                         as HouseBank,
+
+       @ObjectModel.foreignKey.association: '_HouseBankAccount'
+  key  payr.hktid                                                                                                                         as HouseBankAccount,
+
+
+  key  payr.rzawe                                                                                                                         as PaymentMethod,
+
+  key  payr.chect                                                                                                                         as CheckNumber,
+       payr.checktype                                                                                                                     as Checktype,
+       // PAYR.checf as Checf,
+       @ObjectModel.foreignKey.association: '_PaymentRunDate'
+       payr.laufd                                                                                                                         as PaymentRunDate,
+       payr.laufi                                                                                                                         as PaymentRunID,
+
+       @ObjectModel.foreignKey.association: '_Supplier'
+       @Consumption.valueHelpDefinition: [{ entity:{ name: 'I_Supplier_VH', element:'Supplier' } }]
+       payr.lifnr                                                                                                                         as Supplier,
+       // PAYR.kunnr as Kunnr,
+       // PAYR.empfg as Empfg,
+       payr.ubhkt                                                                                                                         as GLAccount,
+       payr.vblnr                                                                                                                         as PaymentDoc,
+       payr.gjahr                                                                                                                         as PaymentDocYr,
+
+       @ObjectModel.foreignKey.association: '_PaymentDate'
+       payr.zaldt                                                                                                                         as PaymenDate,
+
+       @ObjectModel.foreignKey.association: '_CheckEncashmentDate'
+       payr.bancd                                                                                                                         as CheckEncashmentDate,
+
+       payr.bancd                                                                                                                         as CheckEncashmentDateFilter,
+
+
+       @ObjectModel.foreignKey.association: '_Voidreason'
+       payr.voidr                                                                                                                         as VoidReason,
+
+       @ObjectModel.foreignKey.association: '_VoidDate'
+       payr.voidd                                                                                                                         as VoidDate,
+
+       @Semantics.currencyCode:true
+       payr.waers                                                                                                                         as Currency,
+
+       @Semantics.amount.currencyCode: 'Currency'
+       payr.rwbtr                                                                                                                         as PaidAmount,
+
+
+       case
+          when payr.bancd = '00000000'   then 'Y'
+          when  payr.bancd >= $parameters.P_FirstDayOfMonth then 'Y'
+          else
+           'N'
+       end                                                                                                                                as EncashInclFilter,
+
+       case
+
+         when   payr.zaldt <= $parameters.P_LastDayOfPrevMonth then 'Y'
+         else
+          'N'
+       end                                                                                                                                as PaymentDateInclFilter,
+
+       case
+          when payr.voidd = '00000000'   then 'Y'
+          when   payr.voidd >= $parameters.P_FirstDayOfMonth then 'Y'
+          else
+           'N'
+       end                                                                                                                                as VoidDateInclFilter,
+
+       znme1                                                                                                                              as PayeeName,
+       zstra                                                                                                                              as PayeeStreet,
+       zort1                                                                                                                              as PayeeCity,
+       zpstl                                                                                                                              as PayeePostalCD,
+       zregi                                                                                                                              as PayeeRegion,
+
+       concat (concat ( concat ( concat (  concat ( concat ( concat (Concat(znme1, ',  '), zstra), ', '), zort1), ' - '), zpstl), ' - '),zregi) as PayeeAddr,
+
+
+
+       $parameters.P_FirstDayOfMonth                                                                                                      as FirstDayOfMonth,
+
+       $parameters.P_LastDayOfPrevMonth                                                                                                   as LastDayOfPrevMonth,
+
+       _HouseBank.BankCountry                                                                                                             as Country,
+       // PAYR.strgb as Strgb,
+       // PAYR.pridt as Pridt,
+       // PAYR.priti as Priti,
+       // PAYR.prius as Prius,
+       // PAYR.xmanu as Xmanu,
+       // PAYR.xbanc as Xbanc,
+       //
+       // PAYR.extrd as Extrd,
+       // PAYR.extrt as Extrt,
+       // PAYR.xbukr as Xbukr,
+       // PAYR.zanre as Zanre,
+       // PAYR.znme1 as Znme1,
+       // PAYR.znme2 as Znme2,
+       // PAYR.znme3 as Znme3,
+       // PAYR.znme4 as Znme4,
+       // PAYR.zpstl as Zpstl,
+       // PAYR.zort1 as Zort1,
+       // PAYR.zstra as Zstra,
+       // PAYR.zpfac as Zpfac,
+       // PAYR.zland as Zland,
+       // PAYR.zregi as Zregi,
+       // PAYR.zbnks as Zbnks,
+       // PAYR.zbnkn as Zbnkn,
+       // PAYR.zbnkl as Zbnkl,
+       // PAYR.zbkon as Zbkon,
+       // PAYR.zswif as Zswif,
+       // PAYR.ziban as Ziban,
+       // PAYR.uetr as Uetr,
+       //
+       //
+       //
+       // PAYR.voidu as Voidu,
+       // PAYR.checv as Checv,
+       // PAYR.hbkiv as Hbkiv,
+       // PAYR.hktiv as Hktiv,
+       // PAYR.zpst2 as Zpst2,
+       // PAYR.xragl as Xragl,
+       // PAYR.pernr as Pernr,
+       // PAYR.seqnr as Seqnr,
+       // PAYR.btznr as Btznr,
+       // PAYR.rec_belnr as RecBelnr,
+       // PAYR.rec_gjahr as RecGjahr,
+       // PAYR.zpfor as Zpfor,
+       // PAYR.uzawe as Uzawe,
+       // PAYR.ichec as Ichec,
+       // PAYR.irefe as Irefe,
+       // PAYR.dummy_checkmng_incl_eew_ps as DummyCheckmngInclEewPs,
+       // PAYR.rwskt as Rwskt,
+
+
+       _CompanyCode,
+       _HouseBank,
+       _HouseBankAccount,
+       _PaymentRunDate,
+       _PaymentDate,
+       _CheckEncashmentDate,
+       _VoidDate,
+       _Voidreason,
+       _Supplier,
+       _SupplierCompany,
+       _GLAccount
+
+}
+//where payr.bancd is null

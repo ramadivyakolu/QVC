@@ -1,0 +1,480 @@
+@AbapCatalog.sqlViewName: 'ZFASSETMSTR'
+@AccessControl.authorizationCheck: #PRIVILEGED_ONLY
+@VDM.viewType: #CONSUMPTION
+@Analytics.query: true
+@EndUserText.label: 'Asset Balances'
+@AbapCatalog.buffering.status: #NOT_ALLOWED
+@ObjectModel: { usageType.serviceQuality: #D,
+                usageType.sizeCategory: #XXL,
+                usageType.dataClass: #MIXED }
+@ClientHandling.algorithm: #SESSION_VARIABLE
+@Metadata.ignorePropagatedAnnotations: true
+
+define view ZCC_FI_ASSETMASTER_Q
+  with parameters
+    @Consumption.hidden: true
+    @Environment.systemField: #SYSTEM_LANGUAGE
+    P_Language     : sylangu,
+    @Consumption.hidden: true
+    @Environment.systemField: #SYSTEM_DATE
+    P_KeyDate      : fagl_keydate,
+    @Consumption.hidden: true
+    @Environment.systemField: #USER
+    P_BusinessUser : syuname
+
+
+
+  as select from ZCC_FI_FIXEDASSET
+
+{
+  //Rows:
+  //=====
+
+  @Consumption.filter: {selectionType: #RANGE, multipleSelections: false, mandatory: true}
+  @AnalyticsDetails.query.variableSequence : 20
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'CompanyCodeName'
+  @AnalyticsDetails.query.display: #KEY_TEXT
+  CompanyCode,
+
+
+ @Consumption.filter: {selectionType: #RANGE, multipleSelections: false, mandatory: false}
+  @Consumption.valueHelpDefinition: [ { entity: { name: 'I_MasterFixedAssetStdVH', element: 'MasterFixedAsset' },
+                                            additionalBinding:  [ { localElement: 'CompanyCode', element:'CompanyCode' } ]
+                                        } ]
+  @AnalyticsDetails.query.variableSequence : 21
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Asset'
+  @AnalyticsDetails.query.display: #KEY_TEXT
+  MasterFixedAsset,
+  @Semantics.text
+  _MasterFixedAsset.MasterFixedAssetDescription,
+
+ @Consumption.filter: {selectionType: #RANGE, multipleSelections: false, mandatory: false}
+  @Consumption.valueHelpDefinition: [ { entity: { name: 'I_FixedAssetStdVH', element: 'FixedAsset' },
+                                        additionalBinding:  [ { localElement: 'CompanyCode', element: 'CompanyCode' },
+                                                              { localElement: 'MasterFixedAsset', element: 'MasterFixedAsset' } ]
+                                    } ]
+  @AnalyticsDetails.query.variableSequence : 22
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Asset Sub Number'
+  FixedAsset,
+  @Semantics.text
+  FixedAssetDescription,
+
+
+
+  @Consumption.filter: {selectionType: #SINGLE, multipleSelections: true, mandatory: false}
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'AssetClass'
+  @AnalyticsDetails.query.display: #KEY_TEXT
+  AssetClass,
+  @Semantics.text
+  _AssetClass._Text[1:Language = $parameters.P_Language].AssetClassName,
+  
+  @Consumption.filter: {selectionType: #RANGE, multipleSelections: true, mandatory: false}
+  @AnalyticsDetails.query.axis: #FREE
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Asset Creation Date'
+  CreationDate,
+  
+  
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Changed By'
+  LastChangedByUser,
+
+  @Semantics.businessDate.lastChangedAt: true
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Changed Date'
+  LastChangeDate,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Deletion Flag'
+  AccountIsMarkedForDeletion,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Account Locked'
+  AccountIsBlockedForPosting,
+
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Account Determination'
+  AssetAccountDetermination,
+  @Semantics.text
+  _AssetAccountDetermination._Text[1:Language = $parameters.P_Language].AssetAccountDeterminationDesc,
+
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Acquisition Year'
+  FirstAcquisitionFiscalYear,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Acquisition Period'
+  FirstAcquisitionFiscalPeriod,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Acquisition First Period'
+  AcquisitionValueDate,
+
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Acquisition Cap Date'
+  AssetCapitalizationDate,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Last Retirement'
+  LastRetirementValueDate,
+
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Deactivation Date'
+  AssetDeactivationDate,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Pl Ret Date'
+  PlannedRetirementDate,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @AnalyticsDetails.query.display: #KEY_TEXT
+  @ObjectModel.text.element: 'EV Grp 1'
+  Group1AssetEvaluationKey,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @AnalyticsDetails.query.display: #KEY_TEXT
+  @ObjectModel.text.element: 'EV Grp 2'
+  Group2AssetEvaluationKey,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @AnalyticsDetails.query.display: #KEY_TEXT
+  @ObjectModel.text.element: 'EV Grp 3'
+  Group3AssetEvaluationKey,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @AnalyticsDetails.query.display: #KEY_TEXT
+  @ObjectModel.text.element: 'EV Grp4'
+  Group4AssetEvaluationKey,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @AnalyticsDetails.query.display: #KEY_TEXT
+  @ObjectModel.text.element: 'EV Grp 5'
+  Group5AssetEvaluationKey,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'PO Date'
+  FixedAssetOrderDate,
+
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Orig. Asset'
+  OriginalMasterFixedAsset,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'SNo. AUC'
+  OriginalFixedAsset,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Manufacturer of Asset'
+  AssetManufacturerName,
+
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Supplier'
+  AssetSupplierName,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Leasing Company'
+  LeasingCompany,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Lease Notice Date'
+  LeaseingAggrNoticeDate,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Lease Agr Date'
+  LeaseingAggrDate,
+
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Lease Start Date'
+  LeaseStartDate,
+
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Lease years'
+  LeaseYears,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Lease Periods'
+  LeaseIPeriods,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Lease Payment Cycle'
+  LeasePaymentCycle,
+
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Monthly Intrest'
+  LeasingMonthlyInterest,
+
+  //    ANLV
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Asset insurance type'
+  Typ,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Insurance Companies'
+  IC,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Suppl.insur'
+  Supplementary_insurance_text,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Insurance Start Dt'
+  Ins_st_dat,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Insurance Rate'
+  Rate,
+
+
+  //  ANLB
+
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Asset Real Depreciation Area'
+  AssetRealDepreciationArea,
+
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Invest.Support.Key'
+  InvestmentSupportMeasure,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Dep.Key'
+  DepreciationKey,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Planned.useful.life.Yrs'
+  PlannedUsefulLifeInYears,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Planned.useful.life.Periods'
+  PlannedUsefulLifeInPeriods,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Ord.Depr.Pct.Rate'
+  Ord_Depr_Pct_Rate,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Spe.Depr.Pct.Rate'
+  Spe_Depr_Pct_Rate,
+
+
+  //  ANLC
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Fiscal Year'
+  FiscYear,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Expired Life in Yrs'
+  EUL,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Expired Life in Periods'
+  ELP,
+
+
+  // ANLZ
+
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Cost Center'
+  CostCenter,
+  @Semantics.text
+  _CostCenter[1:ValidityStartDate <= $parameters.P_KeyDate and ValidityEndDate >= $parameters.P_KeyDate]._Text[1: Language = $parameters.P_Language].CostCenterName as CostCenterName,
+
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @AnalyticsDetails.query.display: #KEY_TEXT
+  @ObjectModel.text.element: 'Plant'
+  Plant,
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Room'
+  Room,
+
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'FunctionalArea'
+  FunctionalArea,
+  @Semantics.text
+  _FunctionalArea._Text[1:Language = $parameters.P_Language].FunctionalAreaName,
+
+
+  @AnalyticsDetails.query.axis: #ROWS
+  @AnalyticsDetails.query.totals: #HIDE
+  @ObjectModel.text.element: 'Shut Down Flg'
+  IsShutDown,
+
+  @Semantics.currencyCode: true
+  @AnalyticsDetails.query.axis: #ROWS
+  @EndUserText.label: 'Currency Key'
+  Currency_key                                                                                                                                                      as Currency_key,
+
+  @Semantics.currencyCode: true
+  @AnalyticsDetails.query.axis: #ROWS
+  @EndUserText.label: 'CompCode Currency'
+  CompCurrencyKey                                                                                                                                                   as CompCurrencyKey,
+
+
+  // COLUMNS - KEYFIGURES  ANLC
+  @Semantics: { amount : {currencyCode: 'CompCurrencyKey'} }
+  @EndUserText.label: 'Lease Payment'
+  @AnalyticsDetails.query.hidden : false
+  @DefaultAggregation: #SUM
+  LeasePayment,
+
+  @Semantics: { amount : {currencyCode: 'CompCurrencyKey'} }
+  @EndUserText.label: 'Lease Base Value'
+  @AnalyticsDetails.query.hidden : false
+  @DefaultAggregation: #SUM
+  LeasingBaseValue,
+
+  @Semantics: { amount : {currencyCode: 'CompCurrencyKey'} }
+  @EndUserText.label: 'Lease Purch Price'
+  @AnalyticsDetails.query.hidden : false
+  @DefaultAggregation: #SUM
+  LeasedPurchasePrice,
+
+
+
+  @ObjectModel.text.element: 'Cum.Acquis.Val.'
+  @AnalyticsDetails.query.axis: #COLUMNS
+  @DefaultAggregation: #SUM
+  @Semantics: { amount : {currencyCode: 'Currency_key'} }
+  Cum_Acquis_Val,
+
+  @ObjectModel.text.element: 'Cum.Unplnd.Dep.'
+  @AnalyticsDetails.query.axis: #COLUMNS
+  @DefaultAggregation: #SUM
+  @Semantics: { amount : {currencyCode: 'Currency_key'} }
+  Cum_Unplnd_Dep,
+
+  @ObjectModel.text.element: 'Plnd. Ord. Dep.'
+  @AnalyticsDetails.query.axis: #COLUMNS
+  @DefaultAggregation: #SUM
+  @Semantics: { amount : {currencyCode: 'Currency_key'} }
+  Plnd_Ord_Dep,
+
+  @ObjectModel.text.element: 'Plnd.Spec. Dep.'
+  @AnalyticsDetails.query.axis: #COLUMNS
+  @DefaultAggregation: #SUM
+  @Semantics: { amount : {currencyCode: 'Currency_key'} }
+  Plnd_Spec_Dep,
+
+  @ObjectModel.text.element: 'Res.Posted'
+  @AnalyticsDetails.query.axis: #COLUMNS
+  @DefaultAggregation: #SUM
+  @Semantics: { amount : {currencyCode: 'Currency_key'} }
+  Res_Posted,
+
+  @ObjectModel.text.element: 'Retirement'
+  @AnalyticsDetails.query.axis: #COLUMNS
+  @DefaultAggregation: #SUM
+  @Semantics: { amount : {currencyCode: 'Currency_key'} }
+  Retirement,
+
+  @ObjectModel.text.element: 'Ast.Val.Trans.'
+  @AnalyticsDetails.query.axis: #COLUMNS
+  @DefaultAggregation: #SUM
+  @Semantics: { amount : {currencyCode: 'Currency_key'} }
+  Ast_Val_Trans,
+
+  @ObjectModel.text.element: 'Write-Up Ord.Dep.'
+  @AnalyticsDetails.query.axis: #COLUMNS
+  @DefaultAggregation: #SUM
+  @Semantics: { amount : {currencyCode: 'Currency_key'} }
+  W_up_Ord_Dep,
+
+  @ObjectModel.text.element: 'Write-Up Spec.Dep.'
+  @AnalyticsDetails.query.axis: #COLUMNS
+  @DefaultAggregation: #SUM
+  @Semantics: { amount : {currencyCode: 'Currency_key'} }
+  W_up_Spec_Dep,
+
+  @ObjectModel.text.element: 'Write-Up Unplnd.Dep'
+  @AnalyticsDetails.query.axis: #COLUMNS
+  @DefaultAggregation: #SUM
+  @Semantics: { amount : {currencyCode: 'Currency_key'} }
+  W_up_Unplnd_Dep,
+
+  @ObjectModel.text.element: 'Prop.Cum.Spec.Dep.'
+  @AnalyticsDetails.query.axis: #COLUMNS
+  @DefaultAggregation: #SUM
+  @Semantics: { amount : {currencyCode: 'Currency_key'} }
+  Prop_Cum_S_Dep,
+
+  @ObjectModel.text.element: 'Prop.Cum.Upl.Dep'
+  @AnalyticsDetails.query.axis: #COLUMNS
+  @DefaultAggregation: #SUM
+  @Semantics: { amount : {currencyCode: 'Currency_key'} }
+  Prop_Cum_Upl_Dep
+
+}
